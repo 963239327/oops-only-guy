@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>糟了！我只是来恋综修网线的 · 已搬到新网址</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://oopswifi.github.io/">
+<!-- Tabs still running a build from before the move look for a new bundle name here and offer to refresh: assets/index-moved.js -->
+<noscript><meta http-equiv="refresh" content="0; url=https://oopswifi.github.io/"></noscript>
+<style>
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; text-align: center; background: #1a1028; color: #fff;
+  font: 18px/1.8 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+a { color: #ffd43b; }
+</style>
+</head>
+<body>
+<p>游戏搬家啦！正在前往新网址……<br>如果没有自动跳转，请点 <a id="go" href="https://oopswifi.github.io/">oopswifi.github.io</a></p>
+<script>(function forward(target, oldBase, prefix, limit) {
+  const rest = location.pathname.startsWith(oldBase) ? location.pathname.slice(oldBase.length) : '';
+  const isGame = rest === '' || rest === 'index.html';
+  const url = new URL((isGame ? '' : rest) + location.search, target).href;
+  document.getElementById('go').href = url;
+  const pick = (keep) => {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(prefix) && keep(k)) data[k] = localStorage.getItem(k);
+    }
+    return data;
+  };
+  const pack = async (data) => {
+    let bytes = new TextEncoder().encode(JSON.stringify({ v: 1, data }));
+    let kind = 'j.';
+    if (typeof CompressionStream === 'function') {
+      bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+      kind = 'z.';
+    }
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return kind + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+  (async () => {
+    let hash = isGame ? '' : location.hash;
+    if (isGame) {
+      try {
+        const all = pick(() => true);
+        if (Object.keys(all).length) {
+          let packed = await pack(all);
+          // Far too much to carry (never seen in practice): keep the unlock, progress, settings and auto / quick saves.
+          if (packed.length > limit) packed = await pack(pick((k) => !k.startsWith(`${prefix}save_slot`)));
+          if (packed.length <= limit) hash = `#migrate=${packed}`;
+        }
+      } catch {
+        // Storage blocked (private mode, settings): just move.
+      }
+    }
+    location.replace(url + hash);
+  })();
+})("https://oopswifi.github.io/", "/oops-only-guy/", "oog.", 1500000);</script>
+</body>
+</html>
