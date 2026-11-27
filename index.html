@@ -17,15 +17,25 @@ a { color: #ffd43b; }
 <body>
 <p>游戏搬家啦！正在前往新网址……<br>如果没有自动跳转，请点 <a id="go" href="https://oopswifi.github.io/">oopswifi.github.io</a></p>
 <script>(function forward(target, oldBase, prefix, limit) {
-  const rest = location.pathname.startsWith(oldBase) ? location.pathname.slice(oldBase.length) : '';
+  // Leading slashes or backslashes would make the rest name another host (…/oops-only-guy///example.com/, #753).
+  const rest = (location.pathname.startsWith(oldBase) ? location.pathname.slice(oldBase.length) : '').replace(/^[\/\\]+/, '');
   const isGame = rest === '' || rest === 'index.html';
-  const url = new URL((isGame ? '' : rest) + location.search, target).href;
+  let url = new URL((isGame ? '' : rest) + location.search, target).href;
+  // Only ever the new site: never a host or a scheme (https:, javascript:) that the path names.
+  if (new URL(url).origin !== new URL(target).origin) url = target;
   document.getElementById('go').href = url;
   const pick = (keep) => {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (k && k.startsWith(prefix) && keep(k)) data[k] = localStorage.getItem(k);
+    }
+    // The unlock goes as its activation code, never the key: the new site checks the code again (#752).
+    const unlock = `${prefix}unlock`;
+    if (data[unlock]) {
+      let code = '';
+      try { code = String(JSON.parse(data[unlock]).code || ''); } catch { /* no code in it */ }
+      data[unlock] = JSON.stringify(code ? { code } : {});
     }
     return data;
   };
@@ -41,7 +51,9 @@ a { color: #ffd43b; }
     return kind + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   };
   (async () => {
-    let hash = isGame ? '' : location.hash;
+    // Only the data packed here from this address's storage leaves as #migrate=; an incoming fragment goes on only as a
+    // plain anchor (about.html#en), so a #migrate= packed elsewhere never passes with this address as referrer (#753).
+    let hash = !isGame && /^#[A-Za-z][\w-]*$/.test(location.hash) ? location.hash : '';
     if (isGame) {
       try {
         const all = pick(() => true);
