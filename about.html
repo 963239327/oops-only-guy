@@ -16,10 +16,17 @@ a { color: #ffd43b; }
 </head>
 <body>
 <p>游戏搬家啦！正在前往新网址……<br>如果没有自动跳转，请点 <a id="go" href="https://oopswifi.github.io/">oopswifi.github.io</a></p>
-<script>(function forward(target, oldBase, prefix, limit) {
+<script>(function forward(target, oldBase, prefix, limit, pages) {
   // Leading slashes or backslashes would make the rest name another host (…/oops-only-guy///example.com/, #753).
   const rest = (location.pathname.startsWith(oldBase) ? location.pathname.slice(oldBase.length) : '').replace(/^[\/\\]+/, '');
-  const isGame = rest === '' || rest === 'index.html';
+  // The page an old link names, read as the new site's 404.html reads it (scripts/lost-page.mjs): case, trailing
+  // punctuation and .htm/.html ignored. Every other path is the game, also a link that picked up the punctuation after it
+  // in a chat (…/oops-only-guy/）) or a guessed one (/play): it goes to the game with the saves and the unlock (#113). A
+  // file (a photo, the press kit's cover) goes on as it is.
+  let name = rest;
+  try { name = decodeURIComponent(name); } catch { /* keep it encoded */ }
+  name = name.toLowerCase().replace(/[^a-z0-9]+$/, '').replace(/\.html?$/, '').replace(/[^a-z0-9]+$/, '');
+  const isGame = pages.indexOf(name) < 0 && !/\.[a-z0-9]+$/.test(name);
   let url = new URL((isGame ? '' : rest) + location.search, target).href;
   // Only ever the new site: never a host or a scheme (https:, javascript:) that the path names.
   if (new URL(url).origin !== new URL(target).origin) url = target;
@@ -69,6 +76,6 @@ a { color: #ffd43b; }
     }
     location.replace(url + hash);
   })();
-})("https://oopswifi.github.io/", "/oops-only-guy/", "oog.", 1500000);</script>
+})("https://oopswifi.github.io/", "/oops-only-guy/", "oog.", 1500000, ["about","about-en","press","trailer","guide","guide-hant","chat","chat-hant","plane","plane-hant","hr","hr-hant","ost","ost-hant","mandarin","choice","choice-hant","wiki/guangmao","wiki/guangmao-hant","wiki/router-login","wiki/router-login-hant","wiki/wifi-password","wiki/wifi-password-hant","embed"]);</script>
 </body>
 </html>
